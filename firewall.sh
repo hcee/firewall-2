@@ -1,70 +1,149 @@
-#!/bin/bash
+#=======================User configurable section======================
 
-#===============================user configuration==============================
-DEFAULT_CHAINS=("OUTPUT" "INPUT" "FORWARD")
-iHost=enp3s2
-xHost=eno1
-TCP_ALLOWED=("80","22","443","21","20","56","1200")
-UDP_ALLOWED=53,67,68
-ICMP_ALLOWED=8,0
-TCP_DENY="32768:32775 137:139 11 515"
-UDP_DENY="32768:32775 137:139"
-internalIP=192.168.11.2
-externalIPRange=192.168.0.0/24
-internalIPRange=192.168.11.0/24
-externalIP=192.168.0.10
+# Change the ports and network configurations as necessary
 
-# shortcut to resetting the default policy
-if [ "$1" = "flush" ]; then
-  iptables -F
-  iptables -X
-  iptables -t nat -X
-  iptables -t nat -F
-  iptables -P INPUT ACCEPT
-  iptables -P OUTPUT ACCEPT
-  iptables -P FORWARD ACCEPT
-  echo -e "Firewall rules reset!"
-  echo -e "-------------------------------------------\n"
-  iptables -L -n
-  exit 0
-fi
+TCP_ALLOWED="53,67,68,80,443,22,20,21"               
+UDP_ALLOWED="53,67,68"                              
+ALLOWED_ICMP=("echo-request" "echo-reply")
 
-#===========================implementation section================================
+TCP_DROP="32768:32775,137:139,111,515"
+UDP_DROP="32768:32775,137:139"
 
-# Set the default policies to DROP
-for CHAIN in "${DEFAULT_CHAINS[@]}"; do
-    iptables -P "$CHAIN" DROP
-    RESULT=$?
-    if [ $RESULT -eq 0 ]; then
-        echo "Default policy set to DROP for $CHAIN"
-    else
-        echo "Failed to set default policy to drop"
-    fi   
+FW_IP="192.168.0.21"
+FW_INT="eno1"
+
+CLNT_IP="192.168.11.1"
+CLNT_NET="192.168.11.0/24"
+CLNT_INT="enp2s0"
+
+IPT=/usr/sbin/iptables
+
+#===================Implementation section DO NOT TOUCH=================
+
+# Flush the Tables and clean up
+$IPT -F
+$IPT -X
+$IPT -t mangle -F
+$IPT -t nat -F
+$IPT -t filter -F
+
+# Set default policies
+$IPT -P INPUT DROP
+$IPT -P OUTPUT DROP
+$IPT -P FORWARD DROP
+
+# User-Defined Chains
+$IPT -N tcp-traffic
+$IPT -A tcp-traffic
+$IPT -N tcp_in
+$IPT -N tcp_out
+$IPT -A tcp_in
+$IPT -A tcp_out
+
+$IPT -N udp-traffic
+$IPT -A udp-traffic
+$IPT -N udp_in
+$IPT -N udp_out
+$IPT -A udp_in
+$IPT -A udp_out
+
+# User-Defined chains for accounting
+$IPT -A INPUT -i $FW_INT -p tcp -j tcp-traffic
+$IPT -A OUTPUT -o $FW_INT -p tcp -j tcp-traffic
+$IPT -A INPUT -i $CLNT_INT -p tcp -j tcp-traffic
+$IPT -A OUTPUT -o $CLNT_INT -p tcp -j tcp-traffic
+
+$IPT -A INPUT -i $FW_INT -p udp -j udp-traffic
+$IPT -A OUTPUT -o $FW_INT -p udp -j udp-traffic
+$IPT -A INPUT -i $CLNT_INT -p udp -j udp-traffic
+$IPT -A OUTPUT -o $CLNT_INT -p udp -j udp-traffic
+
+$IPT -A tcp-traffic -i $FW_INT -p tcp -j tcp_in
+$IPT -A tcp-traffic -o $FW_INT -p tcp -j tcp_out
+$IPT -A tcp-traffic -i $CLNT_INT -p tcp -j tcp_in
+$IPT -A tcp-traffic -o $CLNT_INT -p tcp -j tcp_out
+
+$IPT -A udp-traffic -i $FW_INT -p udp -j udp_in
+$IPT -A udp-traffic -o $FW_INT -p udp -j udp_out
+$IPT -A udp-traffic -i $CLNT_INT -p udp -j udp_in
+$IPT -A udp-traffic -o $CLNT_INT -p udp -j udp_out
+
+# Drop traffic destined for the firewall
+$IPT -A tcp_in -i $FW_INT -p tcp -m multiport ! --dports $TCP_ALLOWED -j DROP
+$IPT -A udp_in -i $FW_INT -p udp -m multiport ! --dports $UDP_ALLOWED -j DROP
+
+# Drop packets with source IP that match our internal network
+$IPT -A tcp_in -i $FW_INT -s $CLNT_NET -p tcp -j DROP
+$IPT -A udp_in -i $FW_INT -s $CLNT_NET -p udp -j DROP
+
+# Drop all inbound SYN packets unless permitted && drop all TCP packets with flags SYN and FIN
+$IPT -A tcp_in -i $FW_INT -p tcp ! --syn -m state --state NEW -j DROP
+$IPT -A tcp_in -i $FW_INT -p tcp --tcp-flags ALL ACK,RST,SYN,FIN -m state --state NEW -j DROP
+$IPT -A tcp_in -i $FW_INT -p tcp --tcp-flags SYN,FIN SYN,FIN -m state --state NEW -j DROP
+$IPT -A tcp_in -i $FW_INT -p tcp --tcp-flags SYN,RST SYN,RST -m state --state NEW -j DROP
+
+$IPT -A tcp_out -o $FW_INT -p tcp ! --syn -m state --state NEW -j DROP
+$IPT -A tcp_out -o $FW_INT -p tcp --tcp-flags ALL ACK,RST,SYN,FIN -m state --state NEW -j DROP
+$IPT -A tcp_out -o $FW_INT -p tcp --tcp-flags SYN,FIN SYN,FIN -m state --state NEW -j DROP
+$IPT -A tcp_out -o $FW_INT -p tcp --tcp-flags SYN,RST SYN,RST -m state --state NEW -j DROP
+
+# Drop all Telnet packets
+$IPT -A tcp_in -i $FW_INT -p tcp --dport 23 -j DROP
+$IPT -A tcp_out -i $FW_INT -p tcp --sport 23 -j DROP
+$IPT -A tcp_in -i $CLNT_INT -p tcp --dport 23 -j DROP
+$IPT -A tcp_out -i $CLNT_INT -p tcp --sport 23 -j DROP
+
+# Drop all external traffic directed to ports: 32768-32775, 137-139, and TCP ports 111 and 515
+$IPT -A tcp_in -i $FW_INT -p tcp -m multiport --dport $TCP_DROP -j DROP
+$IPT -A udp_in -i $FW_INT -p udp -m multiport --dport $UDP_DROP -j DROP
+
+# Accept incoming fragments
+$IPT -A tcp_in -i $FW_INT -f -m state --state ESTABLISHED -j ACCEPT
+$IPT -A tcp_in -i $CLNT_INT -f -m state --state ESTABLISHED -j ACCEPT
+$IPT -A udp_in -i $FW_INT -f -m state --state ESTABLISHED -j ACCEPT
+$IPT -A udp_in -i $CLNT_INT -f -m state --state ESTABLISHED -j ACCEPT
+
+# Set control connection for FTP and SSH to "Minimum Delay"
+# Set control connection for FTP to "Maximum Throughput"
+$IPT -A PREROUTING -t mangle -p tcp --sport ssh -j TOS --set-tos Minimize-Delay
+$IPT -A PREROUTING -t mangle -p tcp --sport ftp -j TOS --set-tos Minimize-Delay
+$IPT -A PREROUTING -t mangle -p tcp --sport ftp-data -j TOS --set-tos Maximize-Throughput
+
+# Inbound / Outbound permitted on these ports (TCP)
+$IPT -A tcp_in -i $FW_INT -p tcp -m multiport --sport $TCP_ALLOWED -m state --state NEW,ESTABLISHED -j ACCEPT
+$IPT -A tcp_out -o $FW_INT -p tcp -m multiport --sport $TCP_ALLOWED -m state --state ESTABLISHED -j ACCEPT
+$IPT -A tcp_in -i $FW_INT -p tcp -m multiport --dport $TCP_ALLOWED -m state --state NEW,ESTABLISHED -j ACCEPT
+$IPT -A tcp_out -o $FW_INT -p tcp -m multiport --dport $TCP_ALLOWED -m state --state ESTABLISHED -j ACCEPT
+
+$IPT -A tcp_in -i $CLNT_INT -p tcp -m multiport --sport $TCP_ALLOWED -m state --state NEW,ESTABLISHED -j ACCEPT
+$IPT -A tcp_out -o $CLNT_INT -p tcp -m multiport --sport $TCP_ALLOWED -m state --state ESTABLISHED -j ACCEPT
+$IPT -A tcp_in -i $CLNT_INT -p tcp -m multiport --dport $TCP_ALLOWED -m state --state NEW,ESTABLISHED -j ACCEPT
+$IPT -A tcp_out -o $CLNT_INT -p tcp -m multiport --dport $TCP_ALLOWED -m state --state ESTABLISHED -j ACCEPT
+
+# Inbound / Outbound permitted on these ports (UDP)
+$IPT -A udp_in -i $FW_INT -p udp -m multiport --sport $UDP_ALLOWED -m state --state NEW,ESTABLISHED -j ACCEPT
+$IPT -A udp_out -o $FW_INT -p udp -m multiport --sport $UDP_ALLOWED -m state --state ESTABLISHED -j ACCEPT
+$IPT -A udp_in -i $FW_INT -p udp -m multiport --dport $UDP_ALLOWED -m state --state NEW,ESTABLISHED -j ACCEPT
+$IPT -A udp_out -o $FW_INT -p udp -m multiport --dport $UDP_ALLOWED -m state --state ESTABLISHED -j ACCEPT
+
+$IPT -A udp_in -i $CLNT_INT -p udp -m multiport --sport $UDP_ALLOWED -m state --state NEW,ESTABLISHED -j ACCEPT
+$IPT -A udp_out -o $CLNT_INT -p udp -m multiport --sport $UDP_ALLOWED -m state --state ESTABLISHED -j ACCEPT
+$IPT -A udp_in -i $CLNT_INT -p udp -m multiport --dport $UDP_ALLOWED -m state --state NEW,ESTABLISHED -j ACCEPT
+$IPT -A udp_out -o $CLNT_INT -p udp -m multiport --dport $UDP_ALLOWED -m state --state ESTABLISHED -j ACCEPT
+
+# Inbound / Outbound permitted on these type numbers (ICMP)
+for TYPE in "${ALLOWED_ICMP[@]}"; do
+	$IPT -A INPUT -i $FW_INT -p icmp -m icmp --icmp-type $TYPE -m state --state NEW,ESTABLISHED -j ACCEPT
+	$IPT -A INPUT -i $CLNT_INT -p icmp -m icmp --icmp-type $TYPE -m state --state NEW,ESTABLISHED -j ACCEPT
+	$IPT -A OUTPUT -o $FW_INT -p icmp -m icmp --icmp-type $TYPE -m state --state ESTABLISHED -j ACCEPT
+	$IPT -A OUTPUT -o $CLNT_INT -p icmp -m icmp --icmp-type $TYPE -m state --state ESTABLISHED -j ACCEPT
 done
 
-# User-defined chains
-iptables -N denied_packets
-iptables -N bad_tcp_packets
-iptables -N tcpout
-iptables -N tcpin
-iptables -N udpout
-iptables -N icmpout
+# IP Forwarding
+$IPT -t nat -A POSTROUTING -o $FW_INT -j SNAT --to $FW_IP
+$IPT -t nat -A PREROUTING -i $FW_INT -p tcp -m multiport --dports $TCP_ALLOWED -j DNAT --to-destination $CLNT_IP
+$IPT -t nat -A PREROUTING -i $FW_INT -p udp -m multiport --dports $UDP_ALLOWED -j DNAT --to-destination $CLNT_IP
+$IPT -A FORWARD -i $FW_INT -o $CLNT_INT -m state --state NEW,ESTABLISHED -j ACCEPT
+$IPT -A FORWARD -i $CLNT_INT -o $FW_INT -m state --state NEW,ESTABLISHED -j ACCEPT
 
-# Possible stealth scans
-iptables -A bad_tcp_packets -p tcp ! --syn -m state --state NEW -j DROP
-iptables -A bad_tcp_packets -p tcp --tcp-flags ALL NONE -j DROP
-iptables -A bad_tcp_packets -p tcp --tcp-flags ALL ALL -j DROP
-iptables -A bad_tcp_packets -p tcp --tcp-flags ALL FIN,URG,PSH -j DROP
-iptables -A bad_tcp_packets -p tcp --tcp-flags ALL SYN,RST,ACK,FIN,URG -j DROP
-iptables -A bad_tcp_packets -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
-iptables -A bad_tcp_packets -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
-
-#------ Accept Rules-------
-
-for PORT in "${TCP_ALLOWED[@]}"; do
-    iptables -A FORWARD -p tcp --sport $PORT -m state --state NEW,ESTABLISHED -j ACCEPT
-    iptables -A FORWARD -p tcp --dport $PORT -m state --state NEW,ESTABLISHED -j ACCEPT
-done
-
-# Do not accept any packets with a source address from the outside matching your internal network
-iptables -A denied_packets -i $xHost -o $iHost -s 192.168.11.0/24 -j DROP
+$IPT -L -n -v -x
