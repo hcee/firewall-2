@@ -1,3 +1,5 @@
+#! /bin/bash
+
 #=======================User configurable section======================
 
 # Change the ports and network configurations as necessary
@@ -20,17 +22,41 @@ IPT=/usr/sbin/iptables
 
 #===================Implementation section DO NOT TOUCH=================
 
-# Flush the Tables and clean up
+#---------shortcut to resetting the default policy---------
+if [[ $1 = "flush" ]]; then
+  $IPT -F
+  $IPT -X
+  $IPT -P INPUT ACCEPT
+  $IPT -P OUTPUT ACCEPT
+  $IPT -P FORWARD ACCEPT
+  $IPT -t mangle -F
+  $IPT -t nat -F
+  $IPT -t filter -F
+  echo -e "Firewall rules reset!"
+  echo -e "-------------------------------------------\n"
+  $IPT -L -n
+#   exit 0
+elif [[ $1 = "show" ]]; then
+  $IPT -L -n -v -x
+fi
+
+# Flush the Tables and clean up first
 $IPT -F
 $IPT -X
 $IPT -t mangle -F
 $IPT -t nat -F
 $IPT -t filter -F
 
-# Set default policies
-$IPT -P INPUT DROP
-$IPT -P OUTPUT DROP
-$IPT -P FORWARD DROP
+#-----------Set the default policies to DROP--------------
+for CHAIN in "${DEFAULT_CHAINS[@]}"; do
+    $IPT -P "$CHAIN" DROP
+    RESULT=$?
+    if [ $RESULT -eq 0 ]; then
+        echo "Default policy set to DROP for $CHAIN"
+    else
+        echo "Failed to set default policy to drop"
+    fi   
+done
 
 # User-Defined Chains
 $IPT -N tcp-traffic
@@ -133,10 +159,10 @@ $IPT -A udp_out -o $CLNT_INT -p udp -m multiport --dport $UDP_ALLOWED -m state -
 
 # Inbound / Outbound permitted on these type numbers (ICMP)
 for TYPE in "${ALLOWED_ICMP[@]}"; do
-	$IPT -A INPUT -i $FW_INT -p icmp -m icmp --icmp-type $TYPE -m state --state NEW,ESTABLISHED -j ACCEPT
-	$IPT -A INPUT -i $CLNT_INT -p icmp -m icmp --icmp-type $TYPE -m state --state NEW,ESTABLISHED -j ACCEPT
-	$IPT -A OUTPUT -o $FW_INT -p icmp -m icmp --icmp-type $TYPE -m state --state ESTABLISHED -j ACCEPT
-	$IPT -A OUTPUT -o $CLNT_INT -p icmp -m icmp --icmp-type $TYPE -m state --state ESTABLISHED -j ACCEPT
+	$IPT -A INPUT -i $FW_INT -p icmp -m icmp --icmp-type "$TYPE" -m state --state NEW,ESTABLISHED -j ACCEPT
+	$IPT -A INPUT -i $CLNT_INT -p icmp -m icmp --icmp-type "$TYPE" -m state --state NEW,ESTABLISHED -j ACCEPT
+	$IPT -A OUTPUT -o $FW_INT -p icmp -m icmp --icmp-type "$TYPE" -m state --state ESTABLISHED -j ACCEPT
+	$IPT -A OUTPUT -o $CLNT_INT -p icmp -m icmp --icmp-type "$TYPE" -m state --state ESTABLISHED -j ACCEPT
 done
 
 # IP Forwarding
