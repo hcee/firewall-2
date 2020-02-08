@@ -1,0 +1,224 @@
+Firewall test starting...
+=========================================================================
+NMAP Test
+Open Ports to be tested: 80 22 443 21 20
+=========================================================================
+
+Starting Nmap 7.70 ( https://nmap.org ) at 2020-02-07 23:46 PST
+Initiating ARP Ping Scan at 23:46
+Scanning 192.168.0.16 [1 port]
+Completed ARP Ping Scan at 23:46, 0.21s elapsed (1 total hosts)
+Initiating Parallel DNS resolution of 1 host. at 23:46
+Completed Parallel DNS resolution of 1 host. at 23:46, 0.00s elapsed
+Initiating SYN Stealth Scan at 23:46
+Scanning 192.168.0.16 [1000 ports]
+Discovered open port 22/tcp on 192.168.0.16
+Completed SYN Stealth Scan at 23:46, 13.31s elapsed (1000 total ports)
+Nmap scan report for 192.168.0.16
+Host is up (0.00085s latency).
+Not shown: 994 filtered ports
+PORT    STATE  SERVICE
+20/tcp  closed ftp-data
+21/tcp  closed ftp
+22/tcp  open   ssh
+53/tcp  closed domain
+80/tcp  closed http
+443/tcp closed https
+MAC Address: E4:B9:7A:EF:1E:D4 (Unknown)
+
+Read data files from: /usr/bin/../share/nmap
+Nmap done: 1 IP address (1 host up) scanned in 13.64 seconds
+           Raw packets sent: 3000 (131.984KB) | Rcvd: 18 (716B)
+
+=========================================================================
+TCP Test
+=========================================================================
+
+---------------------------------------------------------------------
+Testing: TCP packets on allowed port 80
+Expected result: 0% packet loss
+
+HPING 192.168.0.16 (eno1 192.168.0.16): S set, 40 headers + 0 data bytes
+len=46 ip=192.168.0.16 ttl=63 DF id=0 sport=80 flags=RA seq=0 win=0 rtt=1.0 ms
+DUP! len=46 ip=192.168.0.16 ttl=63 DF id=0 sport=80 flags=RA seq=0 win=0 rtt=1000.9 ms
+DUP! len=46 ip=192.168.0.16 ttl=63 DF id=0 sport=80 flags=RA seq=0 win=0 rtt=2002.9 ms
+
+---------------------------------------------------------------------
+Testing: TCP packets on allowed port 22
+Expected result: 0% packet loss
+
+HPING 192.168.0.16 (eno1 192.168.0.16): S set, 40 headers + 0 data bytes
+len=46 ip=192.168.0.16 ttl=63 DF id=0 sport=22 flags=SA seq=0 win=64240 rtt=1.6 ms
+DUP! len=46 ip=192.168.0.16 ttl=63 DF id=0 sport=22 flags=SA seq=0 win=64240 rtt=1001.5 ms
+DUP! len=46 ip=192.168.0.16 ttl=63 DF id=0 sport=22 flags=SA seq=0 win=64240 rtt=2001.5 ms
+
+---------------------------------------------------------------------
+Testing: TCP packets on allowed port 443
+Expected result: 0% packet loss
+
+HPING 192.168.0.16 (eno1 192.168.0.16): S set, 40 headers + 0 data bytes
+len=46 ip=192.168.0.16 ttl=63 DF id=0 sport=443 flags=RA seq=0 win=0 rtt=1.4 ms
+DUP! len=46 ip=192.168.0.16 ttl=63 DF id=0 sport=443 flags=RA seq=0 win=0 rtt=1002.5 ms
+DUP! len=46 ip=192.168.0.16 ttl=63 DF id=0 sport=443 flags=RA seq=0 win=0 rtt=2002.5 ms
+
+---------------------------------------------------------------------
+Testing: TCP packets on allowed port 21
+Expected result: 0% packet loss
+
+HPING 192.168.0.16 (eno1 192.168.0.16): S set, 40 headers + 0 data bytes
+len=46 ip=192.168.0.16 ttl=63 DF id=0 sport=21 flags=RA seq=0 win=0 rtt=0.8 ms
+DUP! len=46 ip=192.168.0.16 ttl=63 DF id=0 sport=21 flags=RA seq=0 win=0 rtt=1002.8 ms
+DUP! len=46 ip=192.168.0.16 ttl=63 DF id=0 sport=21 flags=RA seq=0 win=0 rtt=2002.8 ms
+
+---------------------------------------------------------------------
+Testing: TCP packets on allowed port 20
+Expected result: 0% packet loss
+
+HPING 192.168.0.16 (eno1 192.168.0.16): S set, 40 headers + 0 data bytes
+len=46 ip=192.168.0.16 ttl=63 DF id=0 sport=20 flags=RA seq=0 win=0 rtt=2.7 ms
+DUP! len=46 ip=192.168.0.16 ttl=63 DF id=0 sport=20 flags=RA seq=0 win=0 rtt=1001.7 ms
+DUP! len=46 ip=192.168.0.16 ttl=63 DF id=0 sport=20 flags=RA seq=0 win=0 rtt=2001.7 ms
+
+=========================================================================
+UDP Test
+Open Ports to be tested: 53 67 68
+=========================================================================
+
+-----------------------------------------
+Testing: UDP packets on allowed port 53
+Expected result: open/filtered
+
+Starting Nmap 7.70 ( https://nmap.org ) at 2020-02-07 23:46 PST
+Nmap scan report for 192.168.0.16
+Host is up (0.00070s latency).
+
+PORT   STATE  SERVICE
+53/udp closed domain
+MAC Address: E4:B9:7A:EF:1E:D4 (Unknown)
+
+Nmap done: 1 IP address (1 host up) scanned in 0.49 seconds
+
+-----------------------------------------
+Testing: UDP packets on allowed port 67
+Expected result: open/filtered
+
+Starting Nmap 7.70 ( https://nmap.org ) at 2020-02-07 23:46 PST
+Nmap scan report for 192.168.0.16
+Host is up (0.0020s latency).
+
+PORT   STATE  SERVICE
+67/udp closed dhcps
+MAC Address: E4:B9:7A:EF:1E:D4 (Unknown)
+
+Nmap done: 1 IP address (1 host up) scanned in 0.48 seconds
+
+-----------------------------------------
+Testing: UDP packets on allowed port 68
+Expected result: open/filtered
+
+Starting Nmap 7.70 ( https://nmap.org ) at 2020-02-07 23:46 PST
+Nmap scan report for 192.168.0.16
+Host is up (0.0020s latency).
+
+PORT   STATE  SERVICE
+68/udp closed dhcpc
+MAC Address: E4:B9:7A:EF:1E:D4 (Unknown)
+
+Nmap done: 1 IP address (1 host up) scanned in 0.50 seconds
+
+=========================================================================
+ICMP Test
+Testing: ICMP for 0,8
+=========================================================================
+Expected result: 0% packet loss
+
+PING 192.168.0.16 (192.168.0.16) 56(84) bytes of data.
+64 bytes from 192.168.0.16: icmp_seq=1 ttl=64 time=0.617 ms
+64 bytes from 192.168.0.16: icmp_seq=2 ttl=64 time=0.739 ms
+64 bytes from 192.168.0.16: icmp_seq=3 ttl=64 time=0.719 ms
+64 bytes from 192.168.0.16: icmp_seq=4 ttl=64 time=0.618 ms
+64 bytes from 192.168.0.16: icmp_seq=5 ttl=64 time=0.769 ms
+
+--- 192.168.0.16 ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 130ms
+rtt min/avg/max/mdev = 0.617/0.692/0.769/0.067 ms
+---------------------------------------
+
+
+
+=========================================================================
+Fragment test
+=========================================================================
+Expected result: 0% packet loss
+
+HPING 192.168.0.16 (eno1 192.168.0.16): S set, 40 headers + 0 data bytes
+len=46 ip=192.168.0.16 ttl=63 DF id=0 sport=22 flags=SA seq=0 win=64240 rtt=2.8 ms
+len=46 ip=192.168.0.16 ttl=63 DF id=0 sport=22 flags=SA seq=1 win=64240 rtt=2.7 ms
+len=46 ip=192.168.0.16 ttl=63 DF id=0 sport=22 flags=SA seq=2 win=64240 rtt=2.5 ms
+---------------------------------------
+
+
+
+=========================================================================
+Testing: SYN packets on high ports
+=========================================================================
+Expected result: 100% packet loss
+
+HPING 192.168.0.16 (eno1 192.168.0.16): S set, 40 headers + 0 data bytes
+---------------------------------------
+
+
+
+=========================================================================
+Testing: Telnet packets should be dropped
+=========================================================================
+Expected result: 100% packet loss
+
+HPING 192.168.0.16 (eno1 192.168.0.16): S set, 40 headers + 0 data bytes
+---------------------------------------
+
+
+
+=========================================================================
+Blocked ports from 32768-32775 test
+=========================================================================
+Expected result: 100% packet loss
+
+HPING 192.168.0.16 (eno1 192.168.0.16): S set, 40 headers + 0 data bytes
+HPING 192.168.0.16 (eno1 192.168.0.16): udp mode set, 28 headers + 0 data bytes
+---------------------------------------
+
+
+
+=========================================================================
+Blocked ports 137-139
+=========================================================================
+Expected result: 100% packet loss
+
+HPING 192.168.0.16 (eno1 192.168.0.16): S set, 40 headers + 0 data bytes
+HPING 192.168.0.16 (eno1 192.168.0.16): udp mode set, 28 headers + 0 data bytes
+---------------------------------------
+
+
+
+=========================================================================
+Blocked TCP port 111 and 515 test
+=========================================================================
+Expected result: 100% packet loss
+HPING 192.168.0.16 (eno1 192.168.0.16): S set, 40 headers + 0 data bytes
+
+HPING 192.168.0.16 (eno1 192.168.0.16): S set, 40 headers + 0 data bytes
+---------------------------------------
+
+
+
+=========================================================================
+Blocking Spoof
+=========================================================================
+Expected result: 100% packet loss
+HPING 192.168.0.16 (eno1 192.168.0.16): NO FLAGS are set, 40 headers + 0 data bytes
+---------------------------------------
+
+
+
+Firewall test complete

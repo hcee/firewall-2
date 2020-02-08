@@ -4,7 +4,7 @@
 ALLOW_TCP=("80" "22" "443" "21" "20")
 ALLOW_UDP=("53" "67" "68")
 ALLOW_ICMP="0,8"
-EXTERNAL_IP="192.168.0.10" #####External IP of the Firewall#####
+EXTERNAL_IP="192.168.0.16" #####External IP of the Firewall#####
 FILE_NAME="c8006-assignment2-testresults-hazel.txt"
 
 if [[ -f "$FILE_NAME" ]]; then
@@ -133,7 +133,6 @@ fi
     echo "Firewall test complete" 
 } >> $FILE_NAME
 
-clear
 echo "=======================================================" 
 echo "Menu"
 echo "=======================================================" 
