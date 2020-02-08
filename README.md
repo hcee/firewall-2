@@ -32,11 +32,6 @@ $ ./client-network.sh
 
 **Please check your /etc/resolv.conf files on both the firewall and internal host to make sure they are the same**
 
-Clone the firewall rule repository from Github
-```
-$ git clone https://github.com/hcee/c8006_hazelshaily_ass2.git
-```
-
 Download the `firewall.sh` script onto the firewall machine
 
 Download the `fw-test.sh` script on the testing machine
