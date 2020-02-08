@@ -3,7 +3,7 @@
 # Firewall Network Config
 iHost="enp2s0"
 externalIP="192.168.11.1"
-firewallIP="192.168.0.10"
+firewallIP="192.168.0.16"
 
 
 ifconfig $iHost $externalIP up
