@@ -2,7 +2,7 @@
 
 #Internal Client Config
 xHost="eno1"
-iHost="enp3s2"
+iHost="enp2s0"
 internalIP="192.168.11.2"
 gateway="192.168.11.1"
 
